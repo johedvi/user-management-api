@@ -5,8 +5,8 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  buildConfiguration: 'Release'
-  terraformVersion: '1.5.7'
+- buildConfiguration: 'Release'
+- terraformVersion: '1.5.7'
 - group: UserManagement-Secrets
 
 stages:
