@@ -7,7 +7,7 @@ pool:
 variables:
   buildConfiguration: 'Release'
   terraformVersion: '1.5.7'
- -group: UserManagement-Secrets
+- group: UserManagement-Secrets
 
 stages:
 - stage: Test
