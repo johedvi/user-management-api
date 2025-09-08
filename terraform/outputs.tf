@@ -1,12 +1,12 @@
 # outputs.tf
 output "api_url" {
   description = "URL of the deployed API"
-  value       = "http://${azurerm_container_group.main.fqdn}:8080"
+  value       = "https://${azurerm_container_group.main.fqdn}"
 }
 
 output "swagger_url" {
   description = "Swagger documentation URL"
-  value       = "http://${azurerm_container_group.main.fqdn}:8080/swagger"
+  value       = "https://${azurerm_container_group.main.fqdn}/swagger"
 }
 
 output "container_registry_name" {
@@ -32,12 +32,4 @@ output "postgres_database_name" {
 output "resource_group_name" {
   description = "Name of the resource group"
   value       = azurerm_resource_group.main.name
-}
-
-output "resource_group_name" {
-  value = azurerm_resource_group.main.name
-}
-
-output "api_url" {
-  value = "https://${azurerm_container_group.api.fqdn}"
 }
