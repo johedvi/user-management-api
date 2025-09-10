@@ -177,7 +177,7 @@ public class UserService : IUserService {
     var issuer = jwtSettings["Issuer"];
     var audience = jwtSettings["Audience"];
 
-    // For testing environment, provide the SAME fallback values as Program.cs
+
     var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
     if (environment == "Testing") {
         secretKey = secretKey ?? "ThisIsAVeryLongSecretKeyThatIsAtLeast32CharactersLongForTesting!";
