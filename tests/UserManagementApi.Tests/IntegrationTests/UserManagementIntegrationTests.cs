@@ -7,23 +7,22 @@ using Xunit;
 
 namespace UserManagementApi.IntegrationTests;
 
-public class UserManagementIntegrationTests : IClassFixture<ApiIntegrationTestFactory>
+public class UserManagementIntegrationTests : IClassFixture<ApiIntegrationTestFactory> 
 {
     private readonly ApiIntegrationTestFactory _factory;
     private readonly HttpClient _client;
     private readonly JsonSerializerOptions _jsonOptions;
 
-    public UserManagementIntegrationTests(ApiIntegrationTestFactory factory)
-    {
+    public UserManagementIntegrationTests(ApiIntegrationTestFactory factory) {
         _factory = factory;
         _client = factory.CreateClient();
         _jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
     }
 
-    private async Task<(string token, GetUserResponse user)> CreateUserAndGetTokenAsync()
-    {
-        var request = new AddUserRequest
-        {
+    private async Task<(string token, GetUserResponse user)> CreateUserAndGetTokenAsync() {
+
+
+        var request = new AddUserRequest {
             Username = $"user_{Guid.NewGuid()}",
             Email = $"user_{Guid.NewGuid()}@example.com",
             Password = "SecurePass123!",
@@ -51,16 +50,15 @@ public class UserManagementIntegrationTests : IClassFixture<ApiIntegrationTestFa
         return (token, actualUser);
     }
 
-    private async Task<string> GetUserTokenAsync()
-    {
+    private async Task<string> GetUserTokenAsync() {
         var (token, _) = await CreateUserAndGetTokenAsync();
         return token;
     }
 
-    private async Task<string> GetAdminTokenAsync()
-    {
-        var request = new AddUserRequest
-        {
+    private async Task<string> GetAdminTokenAsync() {
+
+
+        var request = new AddUserRequest {
             Username = $"admin_{Guid.NewGuid()}",
             Email = $"admin_{Guid.NewGuid()}@example.com",
             Password = "SecurePass123!",
@@ -72,15 +70,14 @@ public class UserManagementIntegrationTests : IClassFixture<ApiIntegrationTestFa
         var response = await _client.PostAsJsonAsync("/api/auth/register", request);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         
-        // Now update the user's role to Admin in the database
+        
         using var context = _factory.GetDbContext();
         var user = context.Users.First(u => u.Username == request.Username);
         user.Role = "Admin";
         context.SaveChanges();
         
         // Login to get a fresh token with admin claims
-        var loginRequest = new LoginRequest
-        {
+        var loginRequest = new LoginRequest {
             Email = request.Email,
             Password = request.Password
         };
@@ -93,14 +90,12 @@ public class UserManagementIntegrationTests : IClassFixture<ApiIntegrationTestFa
         return result.GetProperty("token").GetString()!;
     }
 
-    private void SetAuthorizationHeader(string token)
-    {
+    private void SetAuthorizationHeader(string token) {
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
     }
 
     [Fact]
-    public async Task GetAllUsers_WithoutToken_ReturnsUnauthorized()
-    {
+    public async Task GetAllUsers_WithoutToken_ReturnsUnauthorized() {
         // Clear any existing authorization
         _client.DefaultRequestHeaders.Authorization = null;
         
@@ -112,8 +107,7 @@ public class UserManagementIntegrationTests : IClassFixture<ApiIntegrationTestFa
     }
 
     [Fact]
-    public async Task GetAllUsers_WithValidToken_ReturnsUsers()
-    {
+    public async Task GetAllUsers_WithValidToken_ReturnsUsers() {
         // Arrange - Create a user (which also gives us a token)
         var (token, createdUser) = await CreateUserAndGetTokenAsync();
         SetAuthorizationHeader(token);
@@ -135,8 +129,7 @@ public class UserManagementIntegrationTests : IClassFixture<ApiIntegrationTestFa
     }
 
     [Fact]
-    public async Task GetUserById_WithValidToken_ExistingUser_ReturnsUser()
-    {
+    public async Task GetUserById_WithValidToken_ExistingUser_ReturnsUser() {
         // Arrange - Create a user first and get their actual data
         var (token, createdUser) = await CreateUserAndGetTokenAsync();
         SetAuthorizationHeader(token);
@@ -155,8 +148,7 @@ public class UserManagementIntegrationTests : IClassFixture<ApiIntegrationTestFa
     }
 
     [Fact]
-    public async Task GetUserById_WithValidToken_NonExistentUser_ReturnsNotFound()
-    {
+    public async Task GetUserById_WithValidToken_NonExistentUser_ReturnsNotFound() {
         // Arrange
         var token = await GetUserTokenAsync();
         SetAuthorizationHeader(token);
@@ -169,8 +161,9 @@ public class UserManagementIntegrationTests : IClassFixture<ApiIntegrationTestFa
     }
 
     [Fact]
-    public async Task CreateUser_WithoutToken_ReturnsUnauthorized()
-    {
+    public async Task CreateUser_WithoutToken_ReturnsUnauthorized() {
+
+
         // Clear authorization
         _client.DefaultRequestHeaders.Authorization = null;
         
@@ -192,14 +185,12 @@ public class UserManagementIntegrationTests : IClassFixture<ApiIntegrationTestFa
     }
 
     [Fact]
-    public async Task UpdateUser_WithoutToken_ReturnsUnauthorized()
-    {
+    public async Task UpdateUser_WithoutToken_ReturnsUnauthorized() {
         // Clear authorization
         _client.DefaultRequestHeaders.Authorization = null;
         
         // Arrange
-        var request = new UpdateUserRequest
-        {
+        var request = new UpdateUserRequest {
             Username = $"updateduser_{Guid.NewGuid()}",
             Email = $"updated_{Guid.NewGuid()}@example.com",
             FirstName = "Updated",
@@ -214,8 +205,7 @@ public class UserManagementIntegrationTests : IClassFixture<ApiIntegrationTestFa
     }
 
     [Fact]
-    public async Task DeleteUser_WithoutToken_ReturnsUnauthorized()
-    {
+    public async Task DeleteUser_WithoutToken_ReturnsUnauthorized() {
         // Clear authorization
         _client.DefaultRequestHeaders.Authorization = null;
         
@@ -227,14 +217,12 @@ public class UserManagementIntegrationTests : IClassFixture<ApiIntegrationTestFa
     }
 
     [Fact]
-    public async Task CreateUser_WithValidToken_CreatesUser()
-    {
+    public async Task CreateUser_WithValidToken_CreatesUser() {
         // Arrange
         var token = await GetUserTokenAsync();
         SetAuthorizationHeader(token);
 
-        var createRequest = new AddUserRequest
-        {
+        var createRequest = new AddUserRequest {
             Username = $"created_{Guid.NewGuid()}",
             Email = $"created_{Guid.NewGuid()}@example.com",
             Password = "SecurePass123!",
@@ -256,14 +244,12 @@ public class UserManagementIntegrationTests : IClassFixture<ApiIntegrationTestFa
     }
 
     [Fact]
-    public async Task UpdateUser_WithValidToken_UpdatesUser()
-    {
+    public async Task UpdateUser_WithValidToken_UpdatesUser() {
         // Arrange - Create a user first
         var (token, createdUser) = await CreateUserAndGetTokenAsync();
         SetAuthorizationHeader(token);
 
-        var updateRequest = new UpdateUserRequest
-        {
+        var updateRequest = new UpdateUserRequest {
             Username = createdUser.Username, // Keep same username
             Email = createdUser.Email,       // Keep same email
             FirstName = "Updated",
@@ -284,14 +270,12 @@ public class UserManagementIntegrationTests : IClassFixture<ApiIntegrationTestFa
     }
 
     [Fact]
-    public async Task CompleteUserLifecycle_WithAdminToken_Success()
-    {
+    public async Task CompleteUserLifecycle_WithAdminToken_Success() {
         // Arrange
         var adminToken = await GetAdminTokenAsync();
         SetAuthorizationHeader(adminToken);
 
-        var createRequest = new AddUserRequest
-        {
+        var createRequest = new AddUserRequest {
             Username = $"lifecycle_{Guid.NewGuid()}",
             Email = $"lifecycle_{Guid.NewGuid()}@example.com",
             Password = "SecurePass123!",
@@ -308,8 +292,7 @@ public class UserManagementIntegrationTests : IClassFixture<ApiIntegrationTestFa
         Assert.NotNull(createdUser);
 
         // Act & Assert - Update User
-        var updateRequest = new UpdateUserRequest
-        {
+        var updateRequest = new UpdateUserRequest {
             Username = createdUser.Username,
             Email = createdUser.Email,
             FirstName = "Updated",

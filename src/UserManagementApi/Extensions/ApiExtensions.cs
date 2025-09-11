@@ -4,15 +4,14 @@ using FluentValidation;
 
 namespace UserManagementApi.Extensions;
 
-public static class ApiExtensions
-{
-    public static void MapHealthEndpoints(this WebApplication app)
-    {
+public static class ApiExtensions {
+    public static void MapHealthEndpoints(this WebApplication app) {
         app.MapGet("/", () => "API is running");
     }
 
-    public static void MapAuthEndpoints(this WebApplication app)
-    {
+    public static void MapAuthEndpoints(this WebApplication app){
+
+
         var auth = app.MapGroup("/api/auth")
                      .WithTags("Authentication");
 
@@ -30,8 +29,8 @@ public static class ApiExtensions
             .Produces(401);
     }
 
-    public static void MapUserEndpoints(this WebApplication app)
-    {
+    public static void MapUserEndpoints(this WebApplication app) {
+
         var users = app.MapGroup("/api/users")
                       .RequireAuthorization()
                       .WithTags("Users");
@@ -68,30 +67,26 @@ public static class ApiExtensions
              .Produces(404);
     }
 
-    private static async Task<IResult> RegisterUser(AddUserRequest request, IUserService userService, IValidator<AddUserRequest> validator)
-    {
+    private static async Task<IResult> RegisterUser(AddUserRequest request, IUserService userService, IValidator<AddUserRequest> validator) {
+
+
         var validationResult = await validator.ValidateAsync(request);
-        if (!validationResult.IsValid)
-        {
+        if (!validationResult.IsValid) {
             return Results.BadRequest(new { message = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage)) });
         }
 
-        try
-        {
+        try {
             var token = await userService.Register(request);
             return Results.Ok(new { token });
-        }
-        catch (InvalidOperationException ex)
-        {
+        } catch (InvalidOperationException ex) {
             return Results.BadRequest(new { message = ex.Message });
         }
     }
 
-    private static async Task<IResult> LoginUser(LoginRequest request, IUserService userService, IValidator<LoginRequest> validator)
-    {
+    private static async Task<IResult> LoginUser(LoginRequest request, IUserService userService, IValidator<LoginRequest> validator) {
+
         var validationResult = await validator.ValidateAsync(request);
-        if (!validationResult.IsValid)
-        {
+        if (!validationResult.IsValid) {
             return Results.BadRequest(new { message = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage)) });
         }
 
@@ -101,58 +96,47 @@ public static class ApiExtensions
             : Results.Unauthorized();
     }
 
-    private static async Task<IResult> GetAllUsers(IUserService userService)
-    {
+    private static async Task<IResult> GetAllUsers(IUserService userService) {
         var users = await userService.GetAllUsers();
         return Results.Ok(users);
     }
 
-    private static async Task<IResult> GetUserById(int id, IUserService userService)
-    {
+    private static async Task<IResult> GetUserById(int id, IUserService userService) {
         var user = await userService.GetUserById(id);
         return user != null ? Results.Ok(user) : Results.NotFound();
     }
 
-    private static async Task<IResult> CreateUser(AddUserRequest request, IUserService userService, IValidator<AddUserRequest> validator)
-    {
+    private static async Task<IResult> CreateUser(AddUserRequest request, IUserService userService, IValidator<AddUserRequest> validator) {
+
         var validationResult = await validator.ValidateAsync(request);
-        if (!validationResult.IsValid)
-        {
+        if (!validationResult.IsValid) {
             return Results.BadRequest(new { message = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage)) });
         }
 
-        try
-        {
+        try {
             var user = await userService.AddUser(request);
             return Results.Created($"/api/users/{user.Id}", user);
-        }
-        catch (InvalidOperationException ex)
-        {
+        } catch (InvalidOperationException ex) {
             return Results.BadRequest(new { message = ex.Message });
         }
     }
 
-    private static async Task<IResult> UpdateUser(int id, UpdateUserRequest request, IUserService userService, IValidator<UpdateUserRequest> validator)
-    {
-        var validationResult = await validator.ValidateAsync(request);
-        if (!validationResult.IsValid)
-        {
-            return Results.BadRequest(new { message = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage)) });
-        }
+    private static async Task<IResult> UpdateUser(int id, UpdateUserRequest request, IUserService userService, IValidator<UpdateUserRequest> validator) {
 
-        try
-        {
+        var validationResult = await validator.ValidateAsync(request);
+        
+        if (!validationResult.IsValid) {
+            return Results.BadRequest(new { message = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage)) });
+        } try {
             var user = await userService.UpdateUser(id, request);
             return user != null ? Results.Ok(user) : Results.NotFound();
         }
-        catch (InvalidOperationException ex)
-        {
+        catch (InvalidOperationException ex) {
             return Results.BadRequest(new { message = ex.Message });
         }
     }
 
-    private static async Task<IResult> DeleteUser(int id, IUserService userService)
-    {
+    private static async Task<IResult> DeleteUser(int id, IUserService userService) {
         var deleted = await userService.DeleteUser(id);
         return deleted ? Results.NoContent() : Results.NotFound();
     }

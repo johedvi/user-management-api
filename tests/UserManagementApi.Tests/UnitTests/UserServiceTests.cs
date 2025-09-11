@@ -7,17 +7,14 @@ using UserManagementApi.Services.UserService;
 using UserManagementApi.Models.User;
 using UserManagementApi.Entities;
 
-namespace UserManagement.UnitTests.Services
-{
-    public class UserServiceTests : IDisposable
-    {
+namespace UserManagement.UnitTests.Services {
+    public class UserServiceTests : IDisposable {
         private readonly DataContext _context;
         private readonly Mock<IConfiguration> _mockConfiguration;
         private readonly Mock<IConfigurationSection> _mockJwtSection;
         private readonly UserService _userService;
 
-        public UserServiceTests()
-        {
+        public UserServiceTests() {
             // Setup in-memory database
             var options = new DbContextOptionsBuilder<DataContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
@@ -37,11 +34,9 @@ namespace UserManagement.UnitTests.Services
         }
 
         [Fact]
-        public async Task GetAllUsers_WhenUsersExist_ReturnsAllUsers()
-        {
+        public async Task GetAllUsers_WhenUsersExist_ReturnsAllUsers() {
             // Arrange
-            var users = new List<User>
-            {
+            var users = new List<User> {
                 new User { Id = 1, Username = "user1", Email = "user1@test.com", FirstName = "John", LastName = "Doe" },
                 new User { Id = 2, Username = "user2", Email = "user2@test.com", FirstName = "Jane", LastName = "Smith" }
             };
@@ -59,8 +54,7 @@ namespace UserManagement.UnitTests.Services
         }
 
         [Fact]
-        public async Task GetAllUsers_WhenNoUsers_ReturnsEmptyList()
-        {
+        public async Task GetAllUsers_WhenNoUsers_ReturnsEmptyList() {
             // Act
             var result = await _userService.GetAllUsers();
 
@@ -69,11 +63,9 @@ namespace UserManagement.UnitTests.Services
         }
 
         [Fact]
-        public async Task GetUserById_WithValidId_ReturnsUser()
-        {
+        public async Task GetUserById_WithValidId_ReturnsUser() {
             // Arrange
-            var user = new User 
-            { 
+            var user = new User { 
                 Id = 1, 
                 Username = "testuser", 
                 Email = "test@test.com", 
@@ -95,8 +87,7 @@ namespace UserManagement.UnitTests.Services
         }
 
         [Fact]
-        public async Task GetUserById_WithInvalidId_ReturnsNull()
-        {
+        public async Task GetUserById_WithInvalidId_ReturnsNull() {
             // Act
             var result = await _userService.GetUserById(999);
 
@@ -105,11 +96,9 @@ namespace UserManagement.UnitTests.Services
         }
 
         [Fact]
-        public async Task AddUser_WithValidData_CreatesUser()
-        {
+        public async Task AddUser_WithValidData_CreatesUser() {
             // Arrange
-            var request = new AddUserRequest
-            {
+            var request = new AddUserRequest {
                 Username = "newuser",
                 Email = "new@test.com",
                 Password = "password123",
@@ -134,20 +123,18 @@ namespace UserManagement.UnitTests.Services
         }
 
         [Fact]
-        public async Task AddUser_WithExistingUsername_ThrowsInvalidOperationException()
-        {
+        public async Task AddUser_WithExistingUsername_ThrowsInvalidOperationException() {
             // Arrange
-            var existingUser = new User 
-            { 
+            var existingUser = new User { 
                 Username = "existing", 
                 Email = "existing@test.com",
                 PasswordHash = "hash"
             };
+
             await _context.Users.AddAsync(existingUser);
             await _context.SaveChangesAsync();
 
-            var request = new AddUserRequest
-            {
+            var request = new AddUserRequest {
                 Username = "existing", // Same username
                 Email = "different@test.com",
                 Password = "password123",
@@ -163,20 +150,18 @@ namespace UserManagement.UnitTests.Services
         }
 
         [Fact]
-        public async Task AddUser_WithExistingEmail_ThrowsInvalidOperationException()
-        {
+        public async Task AddUser_WithExistingEmail_ThrowsInvalidOperationException() {
             // Arrange
-            var existingUser = new User 
-            { 
+            var existingUser = new User { 
                 Username = "existing", 
                 Email = "existing@test.com",
                 PasswordHash = "hash"
             };
+
             await _context.Users.AddAsync(existingUser);
             await _context.SaveChangesAsync();
 
-            var request = new AddUserRequest
-            {
+            var request = new AddUserRequest {
                 Username = "different",
                 Email = "existing@test.com", // Same email
                 Password = "password123",
@@ -192,22 +177,20 @@ namespace UserManagement.UnitTests.Services
         }
 
         [Fact]
-        public async Task UpdateUser_WithValidData_UpdatesUser()
-        {
+        public async Task UpdateUser_WithValidData_UpdatesUser() {
             // Arrange
-            var user = new User 
-            { 
+            var user = new User { 
                 Id = 1, 
                 Username = "original", 
                 Email = "original@test.com",
                 FirstName = "Original",
                 LastName = "User"
             };
+
             await _context.Users.AddAsync(user);
             await _context.SaveChangesAsync();
 
-            var request = new UpdateUserRequest
-            {
+            var request = new UpdateUserRequest{
                 Username = "updated",
                 Email = "updated@test.com",
                 FirstName = "Updated",
@@ -226,11 +209,9 @@ namespace UserManagement.UnitTests.Services
         }
 
         [Fact]
-        public async Task UpdateUser_WithNonExistentId_ReturnsNull()
-        {
+        public async Task UpdateUser_WithNonExistentId_ReturnsNull(){
             // Arrange
-            var request = new UpdateUserRequest
-            {
+            var request = new UpdateUserRequest {
                 Username = "updated",
                 Email = "updated@test.com",
                 FirstName = "Updated",
@@ -245,15 +226,14 @@ namespace UserManagement.UnitTests.Services
         }
 
         [Fact]
-        public async Task DeleteUser_WithValidId_ReturnsTrue()
-        {
+        public async Task DeleteUser_WithValidId_ReturnsTrue() {
             // Arrange
-            var user = new User 
-            { 
+            var user = new User { 
                 Id = 1, 
                 Username = "todelete", 
                 Email = "delete@test.com"
             };
+
             await _context.Users.AddAsync(user);
             await _context.SaveChangesAsync();
 
@@ -269,8 +249,7 @@ namespace UserManagement.UnitTests.Services
         }
 
         [Fact]
-        public async Task DeleteUser_WithInvalidId_ReturnsFalse()
-        {
+        public async Task DeleteUser_WithInvalidId_ReturnsFalse() {
             // Act
             var result = await _userService.DeleteUser(999);
 
@@ -279,11 +258,9 @@ namespace UserManagement.UnitTests.Services
         }
 
         [Fact]
-        public async Task Register_WithValidData_CreatesUserAndReturnsToken()
-        {
+        public async Task Register_WithValidData_CreatesUserAndReturnsToken() {
             // Arrange
-            var request = new AddUserRequest
-            {
+            var request = new AddUserRequest {
                 Username = "newuser",
                 Email = "new@test.com",
                 Password = "password123",
@@ -304,21 +281,19 @@ namespace UserManagement.UnitTests.Services
         }
 
         [Fact]
-        public async Task Login_WithValidCredentials_ReturnsToken()
-        {
+        public async Task Login_WithValidCredentials_ReturnsToken() {
             // Arrange
-            var user = new User
-            {
+            var user = new User {
                 Username = "testuser",
                 Email = "test@test.com",
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword("password123"),
                 Role = "User"
             };
+
             await _context.Users.AddAsync(user);
             await _context.SaveChangesAsync();
 
-            var request = new LoginRequest
-            {
+            var request = new LoginRequest {
                 Email = "test@test.com",
                 Password = "password123"
             };
@@ -331,11 +306,9 @@ namespace UserManagement.UnitTests.Services
         }
 
         [Fact]
-        public async Task Login_WithInvalidEmail_ReturnsNull()
-        {
+        public async Task Login_WithInvalidEmail_ReturnsNull() {
             // Arrange
-            var request = new LoginRequest
-            {
+            var request = new LoginRequest {
                 Email = "nonexistent@test.com",
                 Password = "password123"
             };
@@ -348,20 +321,18 @@ namespace UserManagement.UnitTests.Services
         }
 
         [Fact]
-        public async Task Login_WithInvalidPassword_ReturnsNull()
-        {
+        public async Task Login_WithInvalidPassword_ReturnsNull() {
             // Arrange
-            var user = new User
-            {
+            var user = new User {
                 Username = "testuser",
                 Email = "test@test.com",
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword("correctpassword")
             };
+
             await _context.Users.AddAsync(user);
             await _context.SaveChangesAsync();
 
-            var request = new LoginRequest
-            {
+            var request = new LoginRequest {
                 Email = "test@test.com",
                 Password = "wrongpassword"
             };
@@ -373,8 +344,7 @@ namespace UserManagement.UnitTests.Services
             result.Should().BeNull();
         }
 
-        public void Dispose()
-        {
+        public void Dispose() {
             _context.Dispose();
         }
     }

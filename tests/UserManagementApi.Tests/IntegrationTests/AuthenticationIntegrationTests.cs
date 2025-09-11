@@ -6,23 +6,19 @@ using Xunit;
 
 namespace UserManagementApi.IntegrationTests;
 
-public class AuthenticationIntegrationTests : IClassFixture<ApiIntegrationTestFactory>
-{
+public class AuthenticationIntegrationTests : IClassFixture<ApiIntegrationTestFactory> {
     private readonly HttpClient _client;
     private readonly JsonSerializerOptions _jsonOptions;
 
-    public AuthenticationIntegrationTests(ApiIntegrationTestFactory factory)
-    {
+    public AuthenticationIntegrationTests(ApiIntegrationTestFactory factory) {
         _client = factory.CreateClient();
         _jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
     }
 
     [Fact]
-    public async Task Register_ValidUser_ReturnsJwtToken()
-    {
+    public async Task Register_ValidUser_ReturnsJwtToken() {
         // Arrange
-        var request = new AddUserRequest
-        {
+        var request = new AddUserRequest {
             Username = $"testuser_{Guid.NewGuid()}",
             Email = $"test_{Guid.NewGuid()}@example.com",
             Password = "SecurePass123!",
@@ -52,11 +48,9 @@ public class AuthenticationIntegrationTests : IClassFixture<ApiIntegrationTestFa
     [InlineData("ab", "test@example.com", "SecurePass123!", "Username")]
     [InlineData("testuser", "invalid-email", "SecurePass123!", "email")]
     [InlineData("testuser", "test@example.com", "weak", "Password")]
-    public async Task Register_InvalidData_ReturnsBadRequest(string username, string email, string password, string expectedErrorField)
-    {
+    public async Task Register_InvalidData_ReturnsBadRequest(string username, string email, string password, string expectedErrorField) {
         // Arrange
-        var request = new AddUserRequest
-        {
+        var request = new AddUserRequest {
             Username = username,
             Email = email,
             Password = password,
@@ -75,14 +69,12 @@ public class AuthenticationIntegrationTests : IClassFixture<ApiIntegrationTestFa
     }
 
     [Fact]
-    public async Task Register_DuplicateUsername_ReturnsBadRequest()
-    {
+    public async Task Register_DuplicateUsername_ReturnsBadRequest() {
         // Arrange - Use a specific username for this test
         var uniqueId = Guid.NewGuid().ToString("N")[..8];
         var username = $"duplicateuser_{uniqueId}";
         
-        var request1 = new AddUserRequest
-        {
+        var request1 = new AddUserRequest {
             Username = username,
             Email = $"user1_{uniqueId}@example.com",
             Password = "SecurePass123!",
@@ -90,8 +82,7 @@ public class AuthenticationIntegrationTests : IClassFixture<ApiIntegrationTestFa
             LastName = "User"
         };
 
-        var request2 = new AddUserRequest
-        {
+        var request2 = new AddUserRequest {
             Username = username, // Same username
             Email = $"user2_{uniqueId}@example.com", // Different email
             Password = "SecurePass123!",
@@ -113,15 +104,14 @@ public class AuthenticationIntegrationTests : IClassFixture<ApiIntegrationTestFa
     }
 
     [Fact]
-    public async Task Login_ValidCredentials_ReturnsJwtToken()
-    {
+    public async Task Login_ValidCredentials_ReturnsJwtToken() {
+
         // Arrange - First register a user
         var uniqueId = Guid.NewGuid().ToString("N")[..8];
         var email = $"login_{uniqueId}@example.com";
         var password = "SecurePass123!";
         
-        var registerRequest = new AddUserRequest
-        {
+        var registerRequest = new AddUserRequest {
             Username = $"loginuser_{uniqueId}",
             Email = email,
             Password = password,
@@ -132,8 +122,7 @@ public class AuthenticationIntegrationTests : IClassFixture<ApiIntegrationTestFa
         var registerResponse = await _client.PostAsJsonAsync("/api/auth/register", registerRequest);
         Assert.Equal(HttpStatusCode.OK, registerResponse.StatusCode);
 
-        var loginRequest = new LoginRequest
-        {
+        var loginRequest = new LoginRequest {
             Email = email,
             Password = password
         };
@@ -153,11 +142,9 @@ public class AuthenticationIntegrationTests : IClassFixture<ApiIntegrationTestFa
     }
 
     [Fact]
-    public async Task Login_InvalidCredentials_ReturnsUnauthorized()
-    {
+    public async Task Login_InvalidCredentials_ReturnsUnauthorized() {
         // Arrange
-        var loginRequest = new LoginRequest
-        {
+        var loginRequest = new LoginRequest {
             Email = "nonexistent@example.com",
             Password = "WrongPassword123!"
         };

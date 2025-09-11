@@ -4,18 +4,15 @@ using Xunit;
 
 namespace UserManagementApi.IntegrationTests;
 
-public class ApiHealthIntegrationTests : IClassFixture<ApiIntegrationTestFactory>
-{
+public class ApiHealthIntegrationTests : IClassFixture<ApiIntegrationTestFactory> {
     private readonly HttpClient _client;
 
-    public ApiHealthIntegrationTests(ApiIntegrationTestFactory factory)
-    {
+    public ApiHealthIntegrationTests(ApiIntegrationTestFactory factory) {
         _client = factory.CreateClient();
     }
 
     [Fact]
-    public async Task RootEndpoint_ReturnsSuccessMessage()
-    {
+    public async Task RootEndpoint_ReturnsSuccessMessage(){
         // Act
         var response = await _client.GetAsync("/");
 
@@ -26,8 +23,7 @@ public class ApiHealthIntegrationTests : IClassFixture<ApiIntegrationTestFactory
     }
 
     [Fact]
-    public async Task SwaggerEndpoint_IsAccessible()
-    {
+    public async Task SwaggerEndpoint_IsAccessible() {
         // Act
         var response = await _client.GetAsync("/swagger");
 
