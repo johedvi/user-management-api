@@ -36,18 +36,19 @@ public class UserManagementIntegrationTests : IClassFixture<ApiIntegrationTestFa
         var result = JsonSerializer.Deserialize<JsonElement>(content);
         var token = result.GetProperty("token").GetString()!;
         
-        // Get user info by parsing the token or making a request
-        // For now, we'll create a mock user response
-        var user = new GetUserResponse
-        {
-            Id = 1, // This would be the actual ID from your API
-            Username = request.Username,
-            Email = request.Email,
-            FirstName = request.FirstName,
-            LastName = request.LastName
-        };
+        // Get the actual user by querying all users and finding ours
+        using var tempClient = _factory.CreateClient();
+        tempClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var usersResponse = await tempClient.GetAsync("/api/users");
+        var usersContent = await usersResponse.Content.ReadAsStringAsync();
+        var users = JsonSerializer.Deserialize<List<GetUserResponse>>(usersContent, _jsonOptions);
+        
+        if (users == null)
+            throw new InvalidOperationException("Failed to deserialize users list.");
 
-        return (token, user);
+        var actualUser = users.First(u => u.Username == request.Username);
+
+        return (token, actualUser);
     }
 
     private async Task<string> GetUserTokenAsync()
@@ -126,31 +127,22 @@ public class UserManagementIntegrationTests : IClassFixture<ApiIntegrationTestFa
         var users = JsonSerializer.Deserialize<List<GetUserResponse>>(content, _jsonOptions);
         
         Assert.NotNull(users);
-        Assert.True(users.Count >= 1, $"Expected at least 1 user, but got {users.Count}. Users: {string.Join(", ", users.Select(u => u.Username))}");
+        // With shared DB, there will likely be multiple users from other tests
+        Assert.True(users.Count >= 1, $"Expected at least 1 user, but got {users.Count}");
+        
+        // Verify our specific user is in the list
+        Assert.Contains(users, u => u.Username == createdUser.Username);
     }
 
     [Fact]
     public async Task GetUserById_WithValidToken_ExistingUser_ReturnsUser()
     {
-        // Arrange - Create a user first
+        // Arrange - Create a user first and get their actual data
         var (token, createdUser) = await CreateUserAndGetTokenAsync();
         SetAuthorizationHeader(token);
 
-        // Get all users to find the actual ID of our created user
-        var allUsersResponse = await _client.GetAsync("/api/users");
-        Assert.Equal(HttpStatusCode.OK, allUsersResponse.StatusCode);
-        
-        var allUsersContent = await allUsersResponse.Content.ReadAsStringAsync();
-        var allUsers = JsonSerializer.Deserialize<List<GetUserResponse>>(allUsersContent, _jsonOptions);
-        
-        Assert.NotNull(allUsers);
-        Assert.NotEmpty(allUsers);
-        
-        var actualUser = allUsers.FirstOrDefault(u => u.Username == createdUser.Username);
-        Assert.NotNull(actualUser);
-
-        // Act
-        var response = await _client.GetAsync($"/api/users/{actualUser.Id}");
+        // Act - Use the actual user ID
+        var response = await _client.GetAsync($"/api/users/{createdUser.Id}");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -158,7 +150,8 @@ public class UserManagementIntegrationTests : IClassFixture<ApiIntegrationTestFa
         var user = JsonSerializer.Deserialize<GetUserResponse>(content, _jsonOptions);
         
         Assert.NotNull(user);
-        Assert.Equal(actualUser.Id, user.Id);
+        Assert.Equal(createdUser.Id, user.Id);
+        Assert.Equal(createdUser.Username, user.Username);
     }
 
     [Fact]
@@ -168,8 +161,8 @@ public class UserManagementIntegrationTests : IClassFixture<ApiIntegrationTestFa
         var token = await GetUserTokenAsync();
         SetAuthorizationHeader(token);
 
-        // Act
-        var response = await _client.GetAsync("/api/users/99999");
+        // Act - Use a very high ID that shouldn't exist
+        var response = await _client.GetAsync("/api/users/999999");
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -184,8 +177,8 @@ public class UserManagementIntegrationTests : IClassFixture<ApiIntegrationTestFa
         // Arrange
         var request = new AddUserRequest
         {
-            Username = "newuser",
-            Email = "newuser@example.com",
+            Username = $"newuser_{Guid.NewGuid()}",
+            Email = $"newuser_{Guid.NewGuid()}@example.com",
             Password = "SecurePass123!",
             FirstName = "New",
             LastName = "User"
@@ -207,13 +200,13 @@ public class UserManagementIntegrationTests : IClassFixture<ApiIntegrationTestFa
         // Arrange
         var request = new UpdateUserRequest
         {
-            Username = "updateduser",
-            Email = "updated@example.com",
+            Username = $"updateduser_{Guid.NewGuid()}",
+            Email = $"updated_{Guid.NewGuid()}@example.com",
             FirstName = "Updated",
             LastName = "User"
         };
 
-        // Act
+        // Act - Use a high ID that might exist in shared DB
         var response = await _client.PutAsJsonAsync("/api/users/1", request);
 
         // Assert
@@ -226,11 +219,68 @@ public class UserManagementIntegrationTests : IClassFixture<ApiIntegrationTestFa
         // Clear authorization
         _client.DefaultRequestHeaders.Authorization = null;
         
-        // Act
+        // Act - Use a high ID that might exist in shared DB
         var response = await _client.DeleteAsync("/api/users/1");
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CreateUser_WithValidToken_CreatesUser()
+    {
+        // Arrange
+        var token = await GetUserTokenAsync();
+        SetAuthorizationHeader(token);
+
+        var createRequest = new AddUserRequest
+        {
+            Username = $"created_{Guid.NewGuid()}",
+            Email = $"created_{Guid.NewGuid()}@example.com",
+            Password = "SecurePass123!",
+            FirstName = "Created",
+            LastName = "User"
+        };
+
+        // Act
+        var response = await _client.PostAsJsonAsync("/api/users", createRequest);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var content = await response.Content.ReadAsStringAsync();
+        var createdUser = JsonSerializer.Deserialize<GetUserResponse>(content, _jsonOptions);
+        
+        Assert.NotNull(createdUser);
+        Assert.Equal(createRequest.Username, createdUser.Username);
+        Assert.Equal(createRequest.Email, createdUser.Email);
+    }
+
+    [Fact]
+    public async Task UpdateUser_WithValidToken_UpdatesUser()
+    {
+        // Arrange - Create a user first
+        var (token, createdUser) = await CreateUserAndGetTokenAsync();
+        SetAuthorizationHeader(token);
+
+        var updateRequest = new UpdateUserRequest
+        {
+            Username = createdUser.Username, // Keep same username
+            Email = createdUser.Email,       // Keep same email
+            FirstName = "Updated",
+            LastName = "Name"
+        };
+
+        // Act
+        var response = await _client.PutAsJsonAsync($"/api/users/{createdUser.Id}", updateRequest);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var content = await response.Content.ReadAsStringAsync();
+        var updatedUser = JsonSerializer.Deserialize<GetUserResponse>(content, _jsonOptions);
+        
+        Assert.NotNull(updatedUser);
+        Assert.Equal("Updated", updatedUser.FirstName);
+        Assert.Equal("Name", updatedUser.LastName);
     }
 
     [Fact]
@@ -251,20 +301,7 @@ public class UserManagementIntegrationTests : IClassFixture<ApiIntegrationTestFa
 
         // Act & Assert - Create User
         var createResponse = await _client.PostAsJsonAsync("/api/users", createRequest);
-        
-        // Check if admin functionality is implemented
-        if (createResponse.StatusCode == HttpStatusCode.Forbidden)
-        {
-            // Admin functionality not fully implemented yet
-            Assert.Equal(HttpStatusCode.Forbidden, createResponse.StatusCode);
-            return;
-        }
-
-        // If we get here, admin functionality should work
-        Assert.True(
-            createResponse.StatusCode == HttpStatusCode.Created || createResponse.StatusCode == HttpStatusCode.OK,
-            $"Expected Created or OK, but got {createResponse.StatusCode}. Content: {await createResponse.Content.ReadAsStringAsync()}"
-        );
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
 
         var createContent = await createResponse.Content.ReadAsStringAsync();
         var createdUser = JsonSerializer.Deserialize<GetUserResponse>(createContent, _jsonOptions);
@@ -282,7 +319,7 @@ public class UserManagementIntegrationTests : IClassFixture<ApiIntegrationTestFa
         var updateResponse = await _client.PutAsJsonAsync($"/api/users/{createdUser.Id}", updateRequest);
         Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
 
-        // Act & Assert - Delete User
+        // Act & Assert - Delete User (Admin only)
         var deleteResponse = await _client.DeleteAsync($"/api/users/{createdUser.Id}");
         Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
 

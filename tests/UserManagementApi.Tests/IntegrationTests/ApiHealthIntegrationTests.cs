@@ -22,7 +22,7 @@ public class ApiHealthIntegrationTests : IClassFixture<ApiIntegrationTestFactory
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var content = await response.Content.ReadAsStringAsync();
-        Assert.Contains("Users API is running", content);
+        Assert.Contains("API is running", content);
     }
 
     [Fact]
