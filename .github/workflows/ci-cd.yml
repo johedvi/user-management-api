@@ -5,7 +5,7 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  
+
 permissions:
   contents: read
   checks: write
@@ -37,15 +37,14 @@ jobs:
       run: dotnet build --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
       
     - name: Run tests
-      run: dotnet test --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --logger trx --collect:"XPlat Code Coverage"
+      run: dotnet test --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --logger trx --results-directory ./test-results
       
-    - name: Publish test results
-      uses: dorny/test-reporter@v1
-      if: success() || failure()
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
       with:
-        name: .NET Tests
-        path: '**/*.trx'
-        reporter: dotnet-trx
+        name: test-results
+        path: test-results/*.trx
 
   infrastructure:
     name: 'Deploy Infrastructure'
@@ -171,7 +170,7 @@ jobs:
           if [ "$CONTAINER_STATE" = "Running" ]; then
             echo "Container is running successfully"
             echo "API URL: $API_URL"
-            echo "Swagger: $API_URL/swagger"
+            echo "Swagger: $API_URL/swagger/index.html"
           else
             echo "Container state: $CONTAINER_STATE"
             echo "Container may still be starting up"
@@ -185,31 +184,33 @@ jobs:
     - name: Health Check
       run: |
         API_URL="${{ needs.infrastructure.outputs.api_url }}"
-        echo "Performing health check on: $API_URL"
+        HEALTH_CHECK_URL="$API_URL/swagger/index.html"
+        echo "Performing health check on: $HEALTH_CHECK_URL"
         
-        # Wait a bit more for the API to be ready
-        sleep 10
+        # Wait longer for the API to be ready after container restart
+        sleep 60
         
         # Try health check with retry
         for i in {1..5}; do
           echo "Health check attempt $i/5"
           
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL" || echo "000")
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_CHECK_URL" || echo "000")
           
           if [ "$HTTP_STATUS" = "200" ]; then
             echo "Health check passed!"
             break
           else
             echo "Health check failed with status: $HTTP_STATUS"
+            echo "Checking URL: $HEALTH_CHECK_URL"
             if [ $i -eq 5 ]; then
               echo "All health check attempts failed"
             else
-              echo "Retrying in 10 seconds..."
-              sleep 10
+              echo "Retrying in 15 seconds..."
+              sleep 15
             fi
           fi
         done
         
         echo "Deployment process completed"
         echo "API URL: $API_URL"
-        echo "Swagger documentation: $API_URL/swagger"
+        echo "Swagger documentation: $API_URL/swagger/index.html"
