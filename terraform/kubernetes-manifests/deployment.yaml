@@ -1,0 +1,72 @@
+# terraform/kubernetes-manifests/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-management-api
+  namespace: default
+  labels:
+    app: user-management-api
+    version: v1
+spec:
+  replicas: 2  # Start with 2 pods for learning about load balancing
+  selector:
+    matchLabels:
+      app: user-management-api
+  template:
+    metadata:
+      labels:
+        app: user-management-api
+        version: v1
+    spec:
+      containers:
+      - name: api
+        image: userapiregistry.azurecr.io/user-management-api:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: ConnectionStrings__DefaultConnection
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: database-connection
+        - name: Jwt__Key
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: jwt-secret
+        - name: Jwt__Issuer
+          value: "UserManagementAPI"
+        - name: Jwt__Audience
+          value: "UserManagementAPI"
+        - name: ASPNETCORE_URLS
+          value: "http://0.0.0.0:8080"
+        - name: AllowedHosts
+          value: "*"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /swagger/index.html
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /swagger/index.html
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+# Secret for sensitive data (will be created by pipeline)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secrets
+  namespace: default
+type: Opaque
+# Data will be populated by CI/CD pipeline

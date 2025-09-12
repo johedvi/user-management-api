@@ -104,3 +104,9 @@ variable "tags" {
     ManagedBy   = "Terraform"
   }
 }
+
+variable "enable_aks" {
+  description = "Enable AKS cluster deployment"
+  type        = bool
+  default     = true
+}

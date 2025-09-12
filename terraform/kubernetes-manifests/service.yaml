@@ -1,0 +1,17 @@
+# terraform/kubernetes-manifests/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-management-api-service
+  namespace: default
+  labels:
+    app: user-management-api
+spec:
+  selector:
+    app: user-management-api
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  type: ClusterIP  # Internal service, will be exposed via Ingress

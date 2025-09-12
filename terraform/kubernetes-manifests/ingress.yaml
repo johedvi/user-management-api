@@ -1,0 +1,21 @@
+# terraform/kubernetes-manifests/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: user-management-api-ingress
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: addon-http-application-routing
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: user-management-api.local  # Will be updated with actual domain
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: user-management-api-service
+            port:
+              number: 80
