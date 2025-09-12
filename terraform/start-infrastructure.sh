@@ -1,17 +1,29 @@
 #!/bin/bash
+set -e
 
-# Start PostgreSQL
+cd terraform
+
 echo "Starting PostgreSQL server..."
-POSTGRES_NAME=$(terraform output -raw postgres_server_fqdn | cut -d'.' -f1)
-az postgres flexible-server start --resource-group $(terraform output -raw resource_group_name) --name $POSTGRES_NAME
+POSTGRES_NAME=$(terraform output -raw postgres_server_name 2>/dev/null || echo "userapi-postgres")
+RESOURCE_GROUP=$(terraform output -raw resource_group_name 2>/dev/null || echo "rg-user-management-api")
 
-# Start container instance
-echo "Starting container instance..."
-az container start --resource-group $(terraform output -raw resource_group_name) --name user-management-api
+az postgres flexible-server start \
+    --resource-group "$RESOURCE_GROUP" \
+    --name "$POSTGRES_NAME"
 
-# Wait and show status
+echo "Restarting container instance..."
+az container restart \
+    --resource-group "$RESOURCE_GROUP" \
+    --name user-management-api
+
 echo "Waiting for services to start..."
 sleep 30
 
-echo "API URL: $(terraform output -raw api_url)"
-echo "Swagger: $(terraform output -raw swagger_url)"
+if terraform output api_url >/dev/null 2>&1; then
+    echo "API URL: $(terraform output -raw api_url)"
+    echo "Swagger: $(terraform output -raw swagger_url)"
+else
+    echo "Services started, but no Terraform outputs available"
+fi
+
+cd ..

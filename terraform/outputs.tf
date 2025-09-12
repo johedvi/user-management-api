@@ -1,12 +1,12 @@
 # outputs.tf
 output "api_url" {
   description = "URL of the deployed API"
-  value       = "https://${azurerm_container_group.main.fqdn}"
+  value       = "http://${azurerm_container_group.main.fqdn}:8080"
 }
 
 output "swagger_url" {
   description = "Swagger documentation URL"
-  value       = "https://${azurerm_container_group.main.fqdn}/swagger"
+  value       = "http://${azurerm_container_group.main.fqdn}:8080/swagger/index.html"
 }
 
 output "container_registry_name" {
