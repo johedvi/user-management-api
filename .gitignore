@@ -10,3 +10,5 @@ terraform/*.tfstate.backup
 terraform/.terraform.lock.hcl
 terraform/terraform.tfvars
 *.tfvars
+
+.fake
