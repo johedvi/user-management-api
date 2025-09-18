@@ -9,7 +9,7 @@ using FluentValidation;
 namespace UserManagementApi.Extensions;
 
 public static class Configuration {
-    public static void RegisterServices(this WebApplicationBuilder builder) {
+    public static void AddServices(this WebApplicationBuilder builder) {
         // Database - only register for non-testing environments
         if (builder.Environment.EnvironmentName != "Testing") {
             builder.Services.AddDbContext<DataContext>(options =>
@@ -55,7 +55,7 @@ public static class Configuration {
         builder.Services.AddSwaggerGen();
     }
 
-    public static void RegisterMiddlewares(this WebApplication app) {
+    public static void UseMiddlewares(this WebApplication app) {
         // Enable Swagger in Development AND Testing
         if (app.Environment.IsDevelopment() || app.Environment.EnvironmentName == "Testing") {
             app.UseSwagger();

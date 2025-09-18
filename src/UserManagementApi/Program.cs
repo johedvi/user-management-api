@@ -2,11 +2,11 @@ using UserManagementApi.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.RegisterServices();
+builder.AddServices();
 
 var app = builder.Build();
 
-app.RegisterMiddlewares();
+app.UseMiddlewares();
 
 // Register API endpoints
 app.MapHealthEndpoints();
