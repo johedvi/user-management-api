@@ -57,14 +57,14 @@ namespace UserManagementApi {
             // Services
             builder.Services.AddScoped<IUserService, UserService>();
 
-            // CORS
+        
             builder.Services.AddCors(options => {
                 options.AddDefaultPolicy(policy => {
-                    policy.AllowAnyOrigin()
-                          .AllowAnyMethod()
-                          .AllowAnyHeader();
-                });
-            });
+                policy.WithOrigins("http://localhost:5173")  
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 
             // JWT authentication setup
             if (!builder.Environment.IsEnvironment("Testing")) {
@@ -99,6 +99,8 @@ namespace UserManagementApi {
             builder.Services.AddFluentValidationAutoValidation().AddFluentValidationClientsideAdapters();
 
             var app = builder.Build();
+
+            
 
             app.UseSwagger();
             app.UseSwaggerUI();

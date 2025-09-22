@@ -10,3 +10,6 @@ terraform/*.tfstate.backup
 terraform/.terraform.lock.hcl
 terraform/terraform.tfvars
 *.tfvars
+src/UserManagementApi/appsettings.json
+node_modules/
+frontend/node_modules/src/UserManagementApi/appsettings.json
