@@ -16,7 +16,7 @@ terraform {
     resource_group_name  = "rg-user-management-api"
     storage_account_name = "tfstate112715"
     container_name       = "tfstate"
-    key                  = "terraform.tfstate"
+    key                  = "terraform.tfstate" //
   }
 }
 
