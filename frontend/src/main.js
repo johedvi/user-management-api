@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import App from './App.vue'
 import Login from './Login.vue'
 import Users from './Users.vue'
+import './assets/main.css' 
 
 const routes = [
   { path: '/', redirect: '/users' },
