@@ -11,13 +11,26 @@ terraform {
     }
   }
   
-  # ADD THIS BACKEND CONFIGURATION
+  #
   backend "azurerm" {
     resource_group_name  = "rg-user-management-api"
     storage_account_name = "tfstate112715"
     container_name       = "tfstate"
     key                  = "terraform.tfstate" //
   }
+}
+
+
+
+# Static Web App for Frontend
+resource "azurerm_static_web_app" "frontend" {
+  name                = "user-management-frontend"
+  resource_group_name = azurerm_resource_group.main.name
+  location            = "West Europe"  # Static Web Apps have limited regions
+  sku_tier           = "Free"
+  sku_size           = "Free"
+  
+  tags = var.tags
 }
 
 provider "azurerm" {
