@@ -12,7 +12,7 @@ if (import.meta.env.PROD) {
   axios.defaults.baseURL = 'https://subdorsal-jerica-smokelessly.ngrok-free.dev'
 } else {
   // Development - use local API
-  axios.defaults.baseURL = 'https://localhost:7029'
+  axios.defaults.baseURL = 'http://localhost:5000'
 }
 
 console.log('API Base URL:', axios.defaults.baseURL)
