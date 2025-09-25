@@ -18,7 +18,7 @@ if (import.meta.env.PROD) {
 console.log('API Base URL:', axios.defaults.baseURL)
 
 const routes = [
-  { path: '/', redirect: '/users' },
+  { path: '/', redirect: '/login' },
   { path: '/login', component: Login },
   { path: '/users', component: Users }
 ]

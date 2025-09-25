@@ -26,6 +26,17 @@
         <span class="ml-2 text-gray-600">Loading users...</span>
       </div>
 
+      <!-- Error Message -->
+      <div v-if="errorMessage && !loading" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
+        <p class="text-sm text-red-800">{{ errorMessage }}</p>
+        <button
+          @click="loadUsers"
+          class="mt-2 bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
+        >
+          Retry
+        </button>
+      </div>
+
       <!-- Users Grid -->
       <div v-else-if="users.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div
@@ -42,9 +53,9 @@
             </div>
             <div class="ml-4">
               <h3 class="text-lg font-semibold text-gray-900">
-                {{ user.firstName || user.username }} {{ user.lastName || '' }}
+                {{ getUserDisplayName(user) }}
               </h3>
-              <p class="text-sm text-gray-500">@{{ user.username }}</p>
+              <p class="text-sm text-gray-500">@{{ user.username || 'unknown' }}</p>
             </div>
           </div>
 
@@ -54,9 +65,9 @@
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"/>
               </svg>
-              {{ user.email }}
+              {{ user.email || 'No email' }}
             </div>
-            <div class="flex items-center text-sm text-gray-600">
+            <div v-if="user.createdAt" class="flex items-center text-sm text-gray-600">
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a4 4 0 118 0v4m-4 8V9"/>
               </svg>
@@ -83,7 +94,7 @@
       </div>
 
       <!-- Empty State -->
-      <div v-else class="text-center py-12">
+      <div v-else-if="!loading" class="text-center py-12">
         <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
         </svg>
@@ -163,8 +174,8 @@
                 </div>
 
                 <!-- Error Message -->
-                <div v-if="errorMessage" class="p-3 bg-red-50 border border-red-200 rounded-md">
-                  <p class="text-sm text-red-800">{{ errorMessage }}</p>
+                <div v-if="modalErrorMessage" class="p-3 bg-red-50 border border-red-200 rounded-md">
+                  <p class="text-sm text-red-800">{{ modalErrorMessage }}</p>
                 </div>
 
                 <!-- Buttons -->
@@ -178,10 +189,10 @@
                   </button>
                   <button
                     type="submit"
-                    :disabled="loading"
+                    :disabled="submitting"
                     class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <span v-if="loading">{{ isEditing ? 'Updating...' : 'Creating...' }}</span>
+                    <span v-if="submitting">{{ isEditing ? 'Updating...' : 'Creating...' }}</span>
                     <span v-else>{{ isEditing ? 'Update User' : 'Create User' }}</span>
                   </button>
                 </div>
@@ -212,10 +223,12 @@ export default {
     return {
       users: [],
       loading: false,
+      submitting: false,
       showModal: false,
       isEditing: false,
       currentUser: null,
       errorMessage: '',
+      modalErrorMessage: '',
       successMessage: '',
       form: {
         username: '',
@@ -232,15 +245,41 @@ export default {
   methods: {
     async loadUsers() {
       this.loading = true
+      this.errorMessage = ''
+      
       try {
         const token = localStorage.getItem('token')
+        if (!token) {
+          this.$router.push('/login')
+          return
+        }
+        
         const response = await axios.get('/api/users', {
           headers: { Authorization: `Bearer ${token}` }
         })
-        this.users = response.data
+        
+        // Filter out any invalid user objects and ensure all users have required properties
+        this.users = (response.data || []).filter(user => 
+          user && 
+          typeof user === 'object' && 
+          (user.username || user.email) &&
+          user.id
+        ).map(user => ({
+          ...user,
+          username: user.username || '',
+          email: user.email || '',
+          firstName: user.firstName || '',
+          lastName: user.lastName || ''
+        }))
+        
+        console.log('Loaded users:', this.users)
+        
       } catch (error) {
-        this.errorMessage = 'Failed to load users'
+        console.error('Error loading users:', error)
+        this.errorMessage = error.response?.data?.message || 'Failed to load users'
+        
         if (error.response && error.response.status === 401) {
+          localStorage.removeItem('token')
           this.$router.push('/login')
         }
       } finally {
@@ -249,14 +288,67 @@ export default {
     },
 
     getUserInitials(user) {
-      if (user.firstName && user.lastName) {
+      // Add comprehensive null checks to prevent errors
+      if (!user || typeof user !== 'object') return '?'
+      
+      // Try first name + last name
+      if (user.firstName && user.firstName.length > 0 && user.lastName && user.lastName.length > 0) {
         return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
       }
-      return user.username[0].toUpperCase()
+      
+      // Try just first name
+      if (user.firstName && user.firstName.length > 0) {
+        return user.firstName[0].toUpperCase()
+      }
+      
+      // Try username
+      if (user.username && user.username.length > 0) {
+        return user.username[0].toUpperCase()
+      }
+      
+      // Try email
+      if (user.email && user.email.length > 0) {
+        return user.email[0].toUpperCase()
+      }
+      
+      // Fallback
+      return '?'
+    },
+
+    getUserDisplayName(user) {
+      if (!user || typeof user !== 'object') return 'Unknown User'
+      
+      // Try first name + last name
+      if (user.firstName && user.lastName) {
+        return `${user.firstName} ${user.lastName}`
+      }
+      
+      // Try just first name
+      if (user.firstName) {
+        return user.firstName
+      }
+      
+      // Try username
+      if (user.username) {
+        return user.username
+      }
+      
+      // Try email
+      if (user.email) {
+        return user.email
+      }
+      
+      return 'Unknown User'
     },
 
     formatDate(dateString) {
-      return new Date(dateString).toLocaleDateString()
+      try {
+        if (!dateString) return 'Unknown'
+        return new Date(dateString).toLocaleDateString()
+      } catch (error) {
+        console.error('Error formatting date:', error)
+        return 'Unknown'
+      }
     },
 
     openCreateModal() {
@@ -267,11 +359,16 @@ export default {
     },
 
     editUser(user) {
+      if (!user || !user.id) {
+        console.error('Invalid user object for editing:', user)
+        return
+      }
+      
       this.isEditing = true
       this.currentUser = user
       this.form = {
-        username: user.username,
-        email: user.email,
+        username: user.username || '',
+        email: user.email || '',
         password: '',
         firstName: user.firstName || '',
         lastName: user.lastName || ''
@@ -292,18 +389,23 @@ export default {
         firstName: '',
         lastName: ''
       }
-      this.errorMessage = ''
+      this.modalErrorMessage = ''
     },
 
     async handleSubmit() {
-      this.errorMessage = ''
-      this.loading = true
+      this.modalErrorMessage = ''
+      this.submitting = true
 
       try {
         const token = localStorage.getItem('token')
+        if (!token) {
+          this.$router.push('/login')
+          return
+        }
+        
         const headers = { Authorization: `Bearer ${token}` }
 
-        if (this.isEditing) {
+        if (this.isEditing && this.currentUser) {
           await axios.put(`/api/users/${this.currentUser.id}`, {
             username: this.form.username,
             email: this.form.email,
@@ -318,26 +420,41 @@ export default {
 
         this.closeModal()
         await this.loadUsers()
+        
       } catch (error) {
-        this.errorMessage = error.response?.data?.message || 
+        console.error('Error saving user:', error)
+        this.modalErrorMessage = error.response?.data?.message || 
           (this.isEditing ? 'Failed to update user' : 'Failed to create user')
       } finally {
-        this.loading = false
+        this.submitting = false
       }
     },
 
     async deleteUser(id) {
+      if (!id) {
+        console.error('No user ID provided for deletion')
+        return
+      }
+      
       if (!confirm('Are you sure you want to delete this user?')) return
 
       try {
         const token = localStorage.getItem('token')
+        if (!token) {
+          this.$router.push('/login')
+          return
+        }
+        
         await axios.delete(`/api/users/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         })
+        
         this.showSuccessMessage('User deleted successfully!')
         await this.loadUsers()
+        
       } catch (error) {
-        this.errorMessage = 'Failed to delete user'
+        console.error('Error deleting user:', error)
+        this.errorMessage = error.response?.data?.message || 'Failed to delete user'
       }
     },
 
