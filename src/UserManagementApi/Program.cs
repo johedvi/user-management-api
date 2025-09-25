@@ -60,7 +60,7 @@ namespace UserManagementApi {
         
             builder.Services.AddCors(options => {
                 options.AddDefaultPolicy(policy => {
-                policy.WithOrigins("http://localhost:5173", "https://proud-water-08f614003.1.azurestaticapps.net")  
+                policy.WithOrigins("http://localhost:5173", "https://proud-water-08f614003.1.azurestaticapps.net", "https://subdorsal-jerica-smokelessly.ngrok-free.dev")  
               .AllowAnyMethod()
               .AllowAnyHeader();
     });
