@@ -26,7 +26,7 @@ terraform {
 resource "azurerm_static_web_app" "frontend" {
   name                = "user-management-frontend"
   resource_group_name = azurerm_resource_group.main.name
-  location            = "West Europe"  # Static Web Apps have limited regions
+  location            = "West Europe"  
   sku_tier           = "Free"
   sku_size           = "Free"
   

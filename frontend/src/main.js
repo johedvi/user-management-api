@@ -14,7 +14,7 @@ if (import.meta.env.PROD) {
   // Development - use local API
   axios.defaults.baseURL = 'http://localhost:5000'
 }
-axios.defaults.withCredentials = true;
+
 
 console.log('API Base URL:', axios.defaults.baseURL)
 
