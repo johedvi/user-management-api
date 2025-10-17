@@ -6,10 +6,10 @@ import Login from './Login.vue'
 import Users from './Users.vue'
 import './assets/main.css' 
 
-// Set the API base URL using ngrok HTTPS tunnel
+// Set the API base URL to the Azure Container Instance
 if (import.meta.env.PROD) {
-  // Your actual ngrok URL
-  axios.defaults.baseURL = 'https://subdorsal-jerica-smokelessly.ngrok-free.dev'
+  // Azure Container URL
+  axios.defaults.baseURL = 'http://userapi09041259.swedencentral.azurecontainer.io:8080'
 } else {
   // Development - use local API
   axios.defaults.baseURL = 'http://localhost:5000'

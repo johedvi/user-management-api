@@ -60,24 +60,16 @@ namespace UserManagementApi {
         
             builder.Services.AddCors(options => {
                 options.AddPolicy("AllowAll", policy => {
-                    // Read allowed origins from environment variable
-                    var allowedOrigins = builder.Configuration.GetSection("CORS:AllowedOrigins").Get<string[]>();
-                    
-                    // If we have specific origins, use them
-                    if (allowedOrigins != null && allowedOrigins.Length > 0)
-                    {
-                        policy.WithOrigins(allowedOrigins)
-                              .AllowAnyMethod()
-                              .AllowAnyHeader()
-                              .AllowCredentials(); //yes
-                    }
-                    else
-                    {
-                        // Fallback to any origin
-                        policy.SetIsOriginAllowed(_ => true)
-                              .AllowAnyMethod()
-                              .AllowAnyHeader();
-                    }
+                    // Most permissive CORS policy - allows any origin
+                    policy.AllowAnyOrigin()
+                          .AllowAnyMethod()
+                          .AllowAnyHeader();
+
+                    // Note: If you need credentials support, you must specify origins:
+                    // policy.WithOrigins("https://proud-water-08f614003.1.azurestaticapps.net")
+                    //       .AllowAnyMethod()
+                    //       .AllowAnyHeader()
+                    //       .AllowCredentials();
                 });
 });
 
