@@ -136,6 +136,7 @@ resource "azurerm_container_group" "main" {
       "Jwt__Audience"                       = var.jwt_audience
       "ASPNETCORE_URLS"                     = "http://0.0.0.0:8080"
       "AllowedHosts"                        = "*"
+      "CORS__AllowedOrigins__0"             = "https://${azurerm_static_web_app.frontend.default_host_name}"
     }
   }
   

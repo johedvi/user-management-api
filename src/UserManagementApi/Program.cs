@@ -59,13 +59,26 @@ namespace UserManagementApi {
 
         
             builder.Services.AddCors(options => {
-                options.AddDefaultPolicy(policy => {
-                    policy.WithOrigins("http://localhost:5173", "https://proud-water-08f614003.1.azurestaticapps.net", "https://subdorsal-jerica-smokelessly.ngrok-free.dev", "http://localhost:7029")
-                         .AllowAnyMethod()
-                         .AllowCredentials()
-                         .AllowAnyHeader()
-                         .SetIsOriginAllowed(_ => true); // This is more permissive for debugging
-    });
+                options.AddPolicy("AllowAll", policy => {
+                    // Read allowed origins from environment variable
+                    var allowedOrigins = builder.Configuration.GetSection("CORS:AllowedOrigins").Get<string[]>();
+                    
+                    // If we have specific origins, use them
+                    if (allowedOrigins != null && allowedOrigins.Length > 0)
+                    {
+                        policy.WithOrigins(allowedOrigins)
+                              .AllowAnyMethod()
+                              .AllowAnyHeader()
+                              .AllowCredentials();
+                    }
+                    else
+                    {
+                        // Fallback to any origin
+                        policy.SetIsOriginAllowed(_ => true)
+                              .AllowAnyMethod()
+                              .AllowAnyHeader();
+                    }
+                });
 });
 
             // JWT authentication setup
@@ -91,6 +104,10 @@ namespace UserManagementApi {
                             ValidAudience = audience,
                             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
                         };
+                        
+                        // Allow insecure HTTP requests in development/container scenarios
+                        // Remove this in production with proper HTTPS
+                        options.RequireHttpsMetadata = false;
                     });
             }
 
@@ -106,9 +123,16 @@ namespace UserManagementApi {
 
             app.UseSwagger();
             app.UseSwaggerUI();
+            
+            // Comment out HTTPS redirection if using Azure Container Instances
+            // If your container is behind Azure Front Door or a reverse proxy, 
+            // they will handle HTTPS termination
+            // if (!builder.Environment.IsEnvironment("Testing")) {
+            //     app.UseHttpsRedirection();
+            // }
 
             // CORS middleware must be before authentication and other middleware that might return responses
-            app.UseCors();
+            app.UseCors("AllowAll");
             
             app.UseAuthentication();
             app.UseAuthorization();
