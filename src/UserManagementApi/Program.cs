@@ -69,7 +69,7 @@ namespace UserManagementApi {
                         policy.WithOrigins(allowedOrigins)
                               .AllowAnyMethod()
                               .AllowAnyHeader()
-                              .AllowCredentials();
+                              .AllowCredentials(); //yes
                     }
                     else
                     {
