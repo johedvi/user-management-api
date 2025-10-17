@@ -13,3 +13,5 @@ terraform/terraform.tfvars
 src/UserManagementApi/appsettings.json
 node_modules/
 frontend/node_modules/src/UserManagementApi/appsettings.json
+
+.fake

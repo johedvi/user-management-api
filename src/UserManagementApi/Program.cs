@@ -61,9 +61,10 @@ namespace UserManagementApi {
             builder.Services.AddCors(options => {
                 options.AddDefaultPolicy(policy => {
                     policy.WithOrigins("http://localhost:5173", "https://proud-water-08f614003.1.azurestaticapps.net", "https://subdorsal-jerica-smokelessly.ngrok-free.dev", "http://localhost:7029")
-                  .AllowAnyMethod()
-              .AllowCredentials()
-              .AllowAnyHeader();
+                         .AllowAnyMethod()
+                         .AllowCredentials()
+                         .AllowAnyHeader()
+                         .SetIsOriginAllowed(_ => true); // This is more permissive for debugging
     });
 });
 
@@ -106,7 +107,9 @@ namespace UserManagementApi {
             app.UseSwagger();
             app.UseSwaggerUI();
 
+            // CORS middleware must be before authentication and other middleware that might return responses
             app.UseCors();
+            
             app.UseAuthentication();
             app.UseAuthorization();
             app.MapControllers();
