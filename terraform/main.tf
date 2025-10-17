@@ -148,3 +148,4 @@ resource "azurerm_container_group" "main" {
   
   tags = var.tags
 }
+

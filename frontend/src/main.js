@@ -6,10 +6,10 @@ import Login from './Login.vue'
 import Users from './Users.vue'
 import './assets/main.css' 
 
-// Set the API base URL to the Azure Container Instance
+// Set the API base URL - use relative URLs in production to go through Static Web App proxy
 if (import.meta.env.PROD) {
-  // Azure Container URL
-  axios.defaults.baseURL = 'http://userapi09041259.swedencentral.azurecontainer.io:8080'
+  // Use relative URLs - Static Web App will proxy to backend
+  axios.defaults.baseURL = ''
 } else {
   // Development - use local API
   axios.defaults.baseURL = 'http://localhost:5000'
